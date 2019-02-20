@@ -108,7 +108,7 @@ methods.tipsplit = async (args, message) => {
 }
 
 methods.help = (args, message) => {
-  message.reply(`Available commands:\`\`\`!deposit - deposit Logos into tip bot \n!balance - shows your balance in the tip bot \n!withdraw <address> - The tip bot will send you all your tips to the given address \n!tip <amount> <mention> - sends the amount in Logos to the mentioned person\`\`\``)
+  message.reply(`Available commands:\`\`\`!deposit - deposit Logos into tip bot \n!balance - shows your balance in the tip bot \n!withdraw <address> - The tip bot will send you all your tips to the given address \n!tip <amount> <mention> - sends the amount in Logos to the mentioned person \n!tipsplit <amount> [<mention>] - tip split will split the tip amount amongst all the mentioned peopled evenly.\`\`\``)
 }
 
 module.exports = methods
