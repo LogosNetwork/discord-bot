@@ -21,10 +21,11 @@ methods.connectMQTT = () => {
     if (params) {
       let hash = params.hash
       if (commands.pendingHashes[hash] !== undefined) {
-        let message = commands.pendingHashes[hash]
-        const args = message.content.slice(prefix.length).split(' ');
-        await message.react('✅')
-        message.mentions.users.first().send(`You have recieved a tip of ${args[1]} Logos from ${message.author.username}! \n Type !balance to check your balance.`)
+        let data = commands.pendingHashes[hash]
+        await data.message.react('✅')
+        data.message.mentions.users.tap(user => {
+          user.send(`You have recieved a tip of ${data.amount} Logos from ${data.message.author.username}! \n Type !balance to check your balance.`)
+        })
       }
     }
   })

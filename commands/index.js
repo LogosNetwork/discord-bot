@@ -64,10 +64,46 @@ methods.tip = async (args, message) => {
       target: receiverWallet.account.address,
       amount: amountInReason
     }], true, senderWallet.rpc)
-    methods.pendingHashes[val.hash] = message
+    methods.pendingHashes[val.hash] = {amount: amount, message: message}
   } else {
     message.react('❌')
-    return message.author.send(`Insufficient Balance! You tried send ${amount} Logos, but you only have ${RPC.convert.fromReason(senderWallet.account.pendingBalance, 'LOGOS')} Logos`);
+    return message.author.send(`Insufficient Balance to complete this tip!`);
+  }
+}
+
+methods.tipsplit = async (args, message) => {
+  if (!message.mentions.users.size) {
+    message.react('❌')
+    return message.author.send('You need to tag at least one user in order to send them Logos!');
+  }
+  const amount = parseFloat(args[0]);
+  if (isNaN(amount)) {
+    message.react('❌')
+    return message.author.send('Please send amount as the first argument and make sure that it is a valid float.');
+  }
+  const senderID = message.author.id
+  const numberOfSends = Math.ceil(message.mentions.users.size / 8)
+  const totalFee = bigInt('10000000000000000000000').times(bigInt(numberOfSends))
+  const tipAmount = bigInt(RPC.convert.toReason(amount, 'LOGOS')).divide(message.mentions.users.size)
+  const senderWallet = await Accounts.findOrCreateWallet(senderID)
+  if (bigInt(senderWallet.account.pendingBalance).minus(totalFee).minus(tipAmount).geq(0)) {
+    const promises = message.mentions.users.map(async function(user) {
+      let wallet = await Accounts.findOrCreateWallet(user.id)
+      return wallet.account.address
+    })
+    let receivers = await Promise.all(promises)
+    let transactions = receivers.reduce((all,one,i) => {
+      const ch = Math.floor(i/8); 
+      all[ch] = [].concat((all[ch]||[]),[{target:one,amount:tipAmount}]); 
+      return all
+    }, [])
+    for (let trans of transactions) {
+      let val = await senderWallet.account.createSend(trans, true, senderWallet.rpc)
+      methods.pendingHashes[val.hash] = {amount: amount/message.mentions.users.size, message: message}
+    }
+  } else {
+    message.react('❌')
+    return message.author.send(`Insufficient Balance to complete this tip!`);
   }
 }
 
