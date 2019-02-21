@@ -1,6 +1,6 @@
 const mqtt = require('mqtt')
 const mqttRegex = require('mqtt-regex')
-const { prefix, mqttSettings } = require('../config.json')
+const { mqttSettings } = require('../config.json')
 const commands = require('../commands/index')
 
 let methods = {}
@@ -24,7 +24,7 @@ methods.connectMQTT = () => {
         let data = commands.pendingHashes[hash]
         await data.message.react('✅')
         data.message.mentions.users.tap(user => {
-          user.send(`You have recieved a tip of ${data.amount} Logos from ${data.message.author.username}! \n Type !balance to check your balance.`)
+          user.send(`You have recieved a tip of ${data.amount} Logos from ${data.message.author.username}! \nhttps://logostest.net/${hash} \nType !balance to check your balance.`)
         })
       }
     }

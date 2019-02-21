@@ -17,20 +17,36 @@ methods.findOrCreateWallet = (id) => {
       })
       .then(async function(account) {
         if (account === null) {
-          const newWallet = new LogosWallet.Wallet({password: secret, mqtt: false})
+          // Could not find the wallet
+
+          // Create new wallet using our secrect key to encrypt
+          const newWallet = new LogosWallet.Wallet({password: secret, fullSync: false, mqtt: false})
+
+          // Initalize the account inside the wallet
           await newWallet.createAccount()
+
+          // Get the encrypted wallet
           const newEncryptedWallet = newWallet.encrypt()
-          account = await methods.createAccount(id, newEncryptedWallet)
-          const encryptedWallet = account.dataValues.wallet
-          const wallet = new LogosWallet.Wallet({password: secret, mqtt: false})
-          wallet.load(encryptedWallet)
-          await wallet.createAccount()
-          resolve(wallet)
+
+          // Save the new wallet to the postgres Database
+          methods.createAccount(id, newEncryptedWallet)
+
+          // Resolve the wallet
+          resolve(newWallet)
         } else {
+          // Wallet was found
           const encryptedWallet = account.dataValues.wallet
-          const wallet = new LogosWallet.Wallet({password: secret, mqtt: false})
+
+          // Intalize the wallet with our secret key and decrypt the wallet
+          const wallet = new LogosWallet.Wallet({password: secret, fullSync: false, mqtt: false})
+
+          // Decrypt the encrypted wallet
           wallet.load(encryptedWallet)
+
+          // Initalize the account inside the wallet
           await wallet.createAccount()
+          
+          // Resolve the wallet
           resolve(wallet)
         }
       })

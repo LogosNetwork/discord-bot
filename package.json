@@ -1,0 +1,34 @@
+{
+  "name": "logos-discord-tipbot",
+  "version": "0.0.1",
+  "description": "Logos Discord Bot for tipping and other fun stuff.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LogosNetwork/discord-bot.git"
+  },
+  "author": "Tyler Storm <tyler@pla.bs> (https://logos.network)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LogosNetwork/discord-bot/issues"
+  },
+  "homepage": "https://github.com/LogosNetwork/discord-bot#readme",
+  "keywords": [
+    "logos",
+    "discord",
+    "tip",
+    "bot",
+    "cryptocurrency",
+    "blockchain"
+  ],
+  "dependencies": {
+    "@logosnetwork/logos-rpc-client": "^1.1.6",
+    "@logosnetwork/logos-webwallet-sdk": "^0.1.5",
+    "big-integer": "^1.6.41",
+    "discord.js": "^11.4.2",
+    "mqtt": "^2.18.8",
+    "mqtt-regex": "^1.0.5",
+    "pg": "^7.8.1",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "^4.42.0"
+  }
+}

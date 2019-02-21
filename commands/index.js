@@ -7,9 +7,14 @@ const bigInt = require('big-integer')
 methods.pendingHashes = {}
 
 methods.balance = async (args, message) => {
+  // Grab the id of the author of the message
   const authorID = message.author.id
+  
+  // Load the users wallet
   const wallet = await Accounts.findOrCreateWallet(authorID)
-  message.reply(`Your balance is ${RPC.convert.fromReason(wallet.account.pendingBalance, 'LOGOS')} Logos`)
+
+  // Tell the user their balance
+  message.reply(`Your balance is ${RPC.convert.fromReason(wallet.account.pendingBalance, 'LOGOS')} Logos \nView your account here: https://logostest.net/${wallet.account.address}`)
 }
 
 methods.deposit = async (args, message) => {
@@ -45,30 +50,46 @@ methods.withdraw = async (args, message) => {
 }
 
 methods.tip = async (args, message) => {
+  // Check if the message contains a receiver
   if (!message.mentions.users.size) {
     message.react('❌')
     return message.author.send('You need to tag a user in order to send them Logos!');
   }
+
+  // Check that they sent a valid amount
   const amount = parseFloat(args[0]);
-  if (isNaN(amount)) {
+  if (isNaN(amount) || amount <= 0) {
     message.react('❌')
     return message.author.send('Please send amount as the first argument and make sure that it is a valid float.');
   }
+
+  // The ID of the sender
   const senderID = message.author.id
+
+  // The ID of the receiver
   const receiverID = message.mentions.users.first().id
+
+  // Pull both users wallets
   const senderWallet = await Accounts.findOrCreateWallet(senderID)
   const receiverWallet = await Accounts.findOrCreateWallet(receiverID)
+
+  // Calculate the amount to send in Reason which is the smallest division of Logos
   let amountInReason = RPC.convert.toReason(amount, 'LOGOS')
-  if (bigInt(senderWallet.account.pendingBalance).minus('10000000000000000000000').minus(bigInt(amountInReason)).geq(0)) {
-    let val = await senderWallet.account.createSend([{
-      target: receiverWallet.account.address,
-      amount: amountInReason
-    }], true, senderWallet.rpc)
-    methods.pendingHashes[val.hash] = {amount: amount, message: message}
-  } else {
+
+  // Check pending balance in the senders wallet is greater than the amount they are trying to including the transaction fee
+  if (bigInt(senderWallet.account.pendingBalance).minus('10000000000000000000000').minus(bigInt(amountInReason)).lt(0)) {
     message.react('❌')
     return message.author.send(`Insufficient Balance to complete this tip!`);
   }
+
+  // Create the send using the webwallet SDK
+  let val = await senderWallet.account.createSend([{
+    target: receiverWallet.account.address,
+    amount: amountInReason
+  }], true, senderWallet.rpc)
+
+  // Save the hash so we can mark it as confirmed later
+  methods.pendingHashes[val.hash] = {amount: amount, message: message}
 }
 
 methods.tipsplit = async (args, message) => {
@@ -108,7 +129,7 @@ methods.tipsplit = async (args, message) => {
 }
 
 methods.help = (args, message) => {
-  message.reply(`Available commands:\`\`\`!deposit - deposit Logos into tip bot \n!balance - shows your balance in the tip bot \n!withdraw <address> - The tip bot will send you all your tips to the given address \n!tip <amount> <mention> - sends the amount in Logos to the mentioned person \n!tipsplit <amount> [<mention>] - tip split will split the tip amount amongst all the mentioned peopled evenly.\`\`\``)
+  message.reply(`Available commands:\`\`\`!deposit - deposit Logos into tip bot \n!balance - shows your balance in the tip bot \n!withdraw <address> - The tip bot will send you all your tips to the given address \n!tip <amount> <mention> - sends the amount in Logos to the mentioned person \n!tipsplit <amount> <mention>[] - tip split will split the tip amount amongst all the mentioned peopled evenly.\`\`\``)
 }
 
 module.exports = methods
