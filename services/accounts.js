@@ -20,7 +20,13 @@ methods.findOrCreateWallet = (id) => {
           // Could not find the wallet
 
           // Create new wallet using our secrect key to encrypt
-          const newWallet = new LogosWallet.Wallet({password: secret, fullSync: false, mqtt: false})
+          const newWallet = new LogosWallet.Wallet(
+            {
+              password: secret,
+              fullSync: false,
+              mqtt: false
+            }
+          )
 
           // Initalize the account inside the wallet
           await newWallet.createAccount()
@@ -38,7 +44,13 @@ methods.findOrCreateWallet = (id) => {
           const encryptedWallet = account.dataValues.wallet
 
           // Intalize the wallet with our secret key and decrypt the wallet
-          const wallet = new LogosWallet.Wallet({password: secret, fullSync: false, mqtt: false})
+          const wallet = new LogosWallet.Wallet(
+            {
+              password: secret,
+              fullSync: false,
+              mqtt: false
+            }
+          )
 
           // Decrypt the encrypted wallet
           wallet.load(encryptedWallet)
@@ -49,6 +61,55 @@ methods.findOrCreateWallet = (id) => {
           // Resolve the wallet
           resolve(wallet)
         }
+      })
+      .catch((err) => {
+        reject(err)
+      })
+  })
+}
+
+methods.isOnboarded = (id) => {
+  return new Promise((resolve, reject) => {
+    models.account
+      .findOne({
+        where: {
+          discord_id: {
+            [Op.eq]: id
+          }
+        }
+      })
+      .then(account => {
+        if (account === null) {
+          resolve(false)
+        } else {
+          if (!account.dataValues.onboarded) {
+            resolve(false)
+          } else {
+            resolve(account.dataValues.onboarded)
+          }
+        }
+      })
+      .catch((err) => {
+        reject(err)
+      })
+  })
+}
+
+methods.onboard = (id) => {
+  return new Promise((resolve, reject) => {
+    models.account
+      .findOne({
+        where: {
+          discord_id: {
+            [Op.eq]: id
+          }
+        }
+      })
+      .then(account => {
+        account.onboarded = true
+        account.save().then(() => {
+          resolve(true)
+        })
       })
       .catch((err) => {
         reject(err)

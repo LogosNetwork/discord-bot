@@ -34,6 +34,8 @@ client.on('message', async (message) => {
       commands.tps(args, message)
     } else if (command === `tipsplit`) {
       commands.tipsplit(args, message)
+    } else if (command === `tr` || command === `tiprandom`) {
+      commands.tipRandom(args, message)
     }
   }
 })

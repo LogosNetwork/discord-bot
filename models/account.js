@@ -7,6 +7,11 @@ module.exports = (sequelize, DataTypes) => {
     wallet: {
       type: DataTypes.STRING(576),
       require: true
+    },
+    onboarded: {
+      type: DataTypes.BOOLEAN,
+      require: true,
+      defaultValue: false
     }
   }, {
     freezeTableName: true

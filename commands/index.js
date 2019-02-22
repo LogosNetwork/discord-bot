@@ -49,9 +49,9 @@ methods.withdraw = async (args, message) => {
   }
 }
 
-methods.tip = async (args, message) => {
+methods.tip = async (args, message, receiverID = null) => {
   // Check if the message contains a receiver
-  if (!message.mentions.users.size) {
+  if (!message.mentions.users.size && receiverID === null) {
     message.react('❌')
     return message.author.send('You need to tag a user in order to send them Logos!');
   }
@@ -67,7 +67,7 @@ methods.tip = async (args, message) => {
   const senderID = message.author.id
 
   // The ID of the receiver
-  const receiverID = message.mentions.users.first().id
+  if (receiverID === null) receiverID = message.mentions.users.first().id
 
   // Pull both users wallets
   const senderWallet = await Accounts.findOrCreateWallet(senderID)
@@ -89,7 +89,7 @@ methods.tip = async (args, message) => {
   }], true, senderWallet.rpc)
 
   // Save the hash so we can mark it as confirmed later
-  methods.pendingHashes[val.hash] = {amount: amount, message: message}
+  methods.pendingHashes[val.hash] = {amount: amount, message: message, receiverID: receiverID}
 }
 
 methods.tipsplit = async (args, message) => {
@@ -125,6 +125,25 @@ methods.tipsplit = async (args, message) => {
   } else {
     message.react('❌')
     return message.author.send(`Insufficient Balance to complete this tip!`);
+  }
+}
+
+methods.tipRandom = (args, message) => {
+  let users = []
+  let target = null
+  message.guild.members.tap(GuildMember => {
+    if (message.author.id !== GuildMember.id &&
+      GuildMember.lastMessage &&
+      Date.now() - GuildMember.lastMessage.createdTimestamp < 1800000) {
+        users.push(GuildMember)
+    }
+  })
+  if (users.length > 0) {
+    target = users[Math.floor(Math.random()*users.length)]
+    methods.tip(args, message, target.id)
+  } else {
+    message.react('❌')
+    return message.author.send(`No one has been active in the last 30 minutes. Try tipping someone directly!`);
   }
 }
 
