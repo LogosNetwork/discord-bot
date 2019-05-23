@@ -3,7 +3,20 @@ const models = require('../models')
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const LogosWallet = require('@logosnetwork/logos-webwallet-sdk')
-const { secret } = require('../config.json')
+const axios = require('axios')
+const { secret, delegateAddress, rpcProxy } = require('../config.json')
+let delegates = null
+
+methods.getDelegates = async () => {
+  if (delegates) return delegates
+  let res = await axios.get(delegateAddress)
+  delegates = res.data
+  return delegates
+}
+
+methods.setDelegates = (newDelegates) => {
+  delegates = newDelegates
+}
 
 methods.findOrCreateWallet = (id) => {
   return new Promise((resolve, reject) => {
@@ -19,12 +32,19 @@ methods.findOrCreateWallet = (id) => {
         if (account === null) {
           // Could not find the wallet
 
+          // Default rpc
+          let rpc = {
+            delegates: await methods.getDelegates()
+          }
+          if (rpcProxy) rpc.proxy = rpcProxy
+
           // Create new wallet using our secrect key to encrypt
           const newWallet = new LogosWallet.Wallet(
             {
               password: secret,
               fullSync: false,
-              mqtt: false
+              mqtt: false,
+              rpc
             }
           )
 
@@ -43,12 +63,19 @@ methods.findOrCreateWallet = (id) => {
           // Wallet was found
           const encryptedWallet = account.dataValues.wallet
 
+          // Default rpc
+          let rpc = {
+            delegates: await methods.getDelegates()
+          }
+          if (rpcProxy) rpc.proxy = rpcProxy
+
           // Intalize the wallet with our secret key and decrypt the wallet
           const wallet = new LogosWallet.Wallet(
             {
               password: secret,
               fullSync: false,
-              mqtt: false
+              mqtt: false,
+              rpc
             }
           )
 

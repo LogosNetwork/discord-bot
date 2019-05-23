@@ -1,7 +1,6 @@
 let methods = {}
 const Accounts = require('../services/accounts')
 const Logos = require('@logosnetwork/logos-rpc-client')
-const RPC = new Logos({ url: `http://100.25.175.142:55000`, debug: false })
 const bigInt = require('big-integer')
 
 methods.pendingHashes = {}
@@ -14,7 +13,7 @@ methods.balance = async (args, message) => {
   const wallet = await Accounts.findOrCreateWallet(authorID)
 
   // Tell the user their balance
-  message.reply(`Your balance is ${RPC.convert.fromReason(wallet.account.pendingBalance, 'LOGOS')} Logos \nView your account here: https://logostest.net/${wallet.account.address}`)
+  message.reply(`Your balance is ${Logos.convert.fromReason(wallet.account.pendingBalance, 'LOGOS')} Logos \nView your account here: https://pla.bs/${wallet.account.address}`)
 }
 
 methods.deposit = async (args, message) => {
@@ -33,10 +32,10 @@ methods.withdraw = async (args, message) => {
       const wallet = await Accounts.findOrCreateWallet(authorID)
       const totalReason = bigInt(wallet.account.pendingBalance).minus(bigInt('10000000000000000000000'))
       if (totalReason.greater(bigInt('0'))) {
-        await wallet.account.createSend([{
-          target: account,
+        await wallet.account.createSendRequest([{
+          destination: account,
           amount: totalReason
-        }], true, wallet.rpc)
+        }])
         message.react('✅')
       } else {
         message.reply('Insufficient balance to withdraw')
@@ -74,7 +73,7 @@ methods.tip = async (args, message, receiverID = null) => {
   const receiverWallet = await Accounts.findOrCreateWallet(receiverID)
 
   // Calculate the amount to send in Reason which is the smallest division of Logos
-  let amountInReason = RPC.convert.toReason(amount, 'LOGOS')
+  let amountInReason = Logos.convert.toReason(amount, 'LOGOS')
 
   // Check pending balance in the senders wallet is greater than the amount they are trying to including the transaction fee
   if (bigInt(senderWallet.account.pendingBalance).minus('10000000000000000000000').minus(bigInt(amountInReason)).lt(0)) {
@@ -83,10 +82,10 @@ methods.tip = async (args, message, receiverID = null) => {
   }
 
   // Create the send using the webwallet SDK
-  let val = await senderWallet.account.createSend([{
-    target: receiverWallet.account.address,
+  let val = await senderWallet.account.createSendRequest([{
+    destination: receiverWallet.account.address,
     amount: amountInReason
-  }], true, senderWallet.rpc)
+  }])
 
   // Save the hash so we can mark it as confirmed later
   methods.pendingHashes[val.hash] = {amount: amount, message: message, receiverID: receiverID}
@@ -105,7 +104,7 @@ methods.tipsplit = async (args, message) => {
   const senderID = message.author.id
   const numberOfSends = Math.ceil(message.mentions.users.size / 8)
   const totalFee = bigInt('10000000000000000000000').times(bigInt(numberOfSends))
-  const tipAmount = bigInt(RPC.convert.toReason(amount, 'LOGOS')).divide(message.mentions.users.size)
+  const tipAmount = bigInt(Logos.convert.toReason(amount, 'LOGOS')).divide(message.mentions.users.size)
   const senderWallet = await Accounts.findOrCreateWallet(senderID)
   if (bigInt(senderWallet.account.pendingBalance).minus(totalFee).minus(tipAmount).geq(0)) {
     const promises = message.mentions.users.map(async function(user) {
@@ -115,11 +114,11 @@ methods.tipsplit = async (args, message) => {
     let receivers = await Promise.all(promises)
     let transactions = receivers.reduce((all,one,i) => {
       const ch = Math.floor(i/8); 
-      all[ch] = [].concat((all[ch]||[]),[{target:one,amount:tipAmount}]); 
+      all[ch] = [].concat((all[ch]||[]),[{destination:one,amount:tipAmount}]); 
       return all
     }, [])
     for (let trans of transactions) {
-      let val = await senderWallet.account.createSend(trans, true, senderWallet.rpc)
+      let val = await senderWallet.account.createSendRequest(trans)
       methods.pendingHashes[val.hash] = {amount: amount/message.mentions.users.size, message: message}
     }
   } else {
@@ -130,7 +129,7 @@ methods.tipsplit = async (args, message) => {
 
 methods.tipRandom = (args, message) => {
   let users = []
-  let target = null
+  let discordAccount = null
   message.guild.members.tap(GuildMember => {
     if (message.author.id !== GuildMember.id &&
       GuildMember.lastMessage &&
@@ -139,8 +138,8 @@ methods.tipRandom = (args, message) => {
     }
   })
   if (users.length > 0) {
-    target = users[Math.floor(Math.random()*users.length)]
-    methods.tip(args, message, target.id)
+    discordAccount = users[Math.floor(Math.random()*users.length)]
+    methods.tip(args, message, discordAccount.id)
   } else {
     message.react('❌')
     return message.author.send(`No one has been active in the last 30 minutes. Try tipping someone directly!`);
