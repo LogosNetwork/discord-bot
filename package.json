@@ -30,6 +30,6 @@
     "mqtt-regex": "^1.0.5",
     "pg": "^7.11.0",
     "pg-hstore": "^2.3.2",
-    "sequelize": "^4.44.0"
+    "sequelize": "^5.8.6"
   }
 }
