@@ -23,7 +23,7 @@
   "dependencies": {
     "@logosnetwork/logos-rpc-client": "^1.1.29",
     "@logosnetwork/logos-webwallet-sdk": "^0.1.30",
-    "axios": "^0.18.0",
+    "axios": "^0.19.0",
     "big-integer": "^1.6.43",
     "discord.js": "^11.5.1",
     "mqtt": "^2.18.8",
